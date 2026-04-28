@@ -3,6 +3,7 @@ package schoolhelpdesk.gui;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -10,7 +11,10 @@ import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -22,6 +26,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -37,12 +42,24 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import org.bson.Document;
 import schoolhelpdesk.dao.TicketDAO;
 import schoolhelpdesk.model.Ticket;
 import schoolhelpdesk.model.User;
 
 public class StudentDashboard extends JFrame {
+    private static final Color APP_BG = new Color(241, 245, 249);
+    private static final Color SURFACE_BG = new Color(255, 255, 255);
+    private static final Color BORDER = new Color(226, 232, 240);
+    private static final Color BRAND = new Color(37, 99, 235);
+    private static final Color BRAND_DARK = new Color(30, 64, 175);
+    private static final Color TEXT_PRIMARY = new Color(15, 23, 42);
+    private static final Color TEXT_MUTED = new Color(100, 116, 139);
+    private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 24);
+    private static final Font BODY_FONT = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font LABEL_FONT = new Font("Segoe UI", Font.BOLD, 12);
+
     private final User currentUser;
     private final TicketDAO ticketDAO;
     private List<Document> cachedUserTickets;
@@ -94,15 +111,15 @@ public class StudentDashboard extends JFrame {
 
     private void initializeComponents() {
         nameLabel = new JLabel("User: " + currentUser.getFullName());
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         nameLabel.setForeground(Color.WHITE);
 
         dateTimeLabel = new JLabel();
-        dateTimeLabel.setFont(new Font("Arial", Font.PLAIN, 13));
+        dateTimeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         dateTimeLabel.setForeground(new Color(220, 235, 255));
 
-        notificationIconLabel = new JLabel("🔔 0 updates");
-        notificationIconLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        notificationIconLabel = new JLabel("Notifications: 0");
+        notificationIconLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         notificationIconLabel.setForeground(new Color(255, 230, 80));
 
         dashboardButton = createSidebarButton("Dashboard");
@@ -125,22 +142,18 @@ public class StudentDashboard extends JFrame {
         };
         ticketsTable = new JTable(ticketsTableModel);
         ticketsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        ticketsTable.setRowHeight(28);
-        ticketsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
-        ticketsTable.getTableHeader().setBackground(new Color(0, 81, 153));
-        ticketsTable.getTableHeader().setForeground(Color.WHITE);
-        ticketsTable.setSelectionBackground(new Color(198, 227, 255));
+        styleModernTable(ticketsTable);
 
         updatesArea = new JTextArea(8, 30);
         updatesArea.setEditable(false);
         updatesArea.setLineWrap(true);
         updatesArea.setWrapStyleWord(true);
-        updatesArea.setFont(new Font("Arial", Font.PLAIN, 12));
+        updatesArea.setFont(BODY_FONT);
     }
 
     private JLabel createValueLabel() {
         JLabel label = new JLabel("0");
-        label.setFont(new Font("Arial", Font.BOLD, 30));
+        label.setFont(new Font("Segoe UI", Font.BOLD, 30));
         label.setHorizontalAlignment(SwingConstants.CENTER);
         return label;
     }
@@ -148,37 +161,41 @@ public class StudentDashboard extends JFrame {
     private JButton createSidebarButton(String text) {
         JButton button = new JButton(text);
         
-        // Modern button styling
-        button.setBackground(new Color(52, 58, 64));
+        // Match admin sidebar sizing and styling
+        boolean isLogout = "Logout".equals(text);
+        button.setBackground(isLogout ? new Color(220, 53, 69) : new Color(51, 65, 85));
         button.setForeground(Color.WHITE);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setHorizontalAlignment(SwingConstants.LEFT);
         button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(38, 42, 52), 1),
-            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+            BorderFactory.createLineBorder(isLogout ? new Color(185, 28, 28) : new Color(71, 85, 105), 1),
+            BorderFactory.createEmptyBorder(12, 16, 12, 16)
         ));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setOpaque(true);
-        button.setPreferredSize(new Dimension(180, 40));
+        button.setPreferredSize(new Dimension(210, 46));
+        button.putClientProperty("active", false);
+        button.putClientProperty("logout", isLogout);
         
-        // Simple hover effect
+        // Hover effect that respects active state
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                if (button != dashboardButton || !button.getBackground().equals(new Color(0, 102, 204))) {
-                    button.setBackground(new Color(58, 58, 76));
+                if (Boolean.TRUE.equals(button.getClientProperty("logout"))) {
+                    button.setBackground(new Color(239, 68, 68));
+                } else if (!isSidebarButtonActive(button)) {
+                    button.setBackground(new Color(71, 85, 105));
                 }
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                if (!button.getBackground().equals(new Color(0, 102, 204)) && button != logoutButton) {
-                    button.setBackground(new Color(40, 40, 52));
-                }
-                if (button == logoutButton) {
-                    button.setBackground(new Color(160, 35, 45));
+                if (Boolean.TRUE.equals(button.getClientProperty("logout"))) {
+                    button.setBackground(new Color(220, 53, 69));
+                } else if (!isSidebarButtonActive(button)) {
+                    button.setBackground(new Color(51, 65, 85));
                 }
             }
         });
@@ -204,7 +221,7 @@ public class StudentDashboard extends JFrame {
 
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(0, 51, 102));
+        panel.setBackground(BRAND_DARK);
         panel.setBorder(new EmptyBorder(14, 18, 14, 18));
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
@@ -218,6 +235,10 @@ public class StudentDashboard extends JFrame {
         right.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> manualRefresh());
+        refreshButton.setBackground(BRAND);
+        refreshButton.setForeground(Color.WHITE);
+        refreshButton.setFont(LABEL_FONT);
+        refreshButton.setBorder(BorderFactory.createEmptyBorder(7, 12, 7, 12));
         refreshButton.setFocusPainted(false);
         refreshButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         right.add(refreshButton);
@@ -255,19 +276,19 @@ public class StudentDashboard extends JFrame {
         logoPanel.setBackground(new Color(0, 0, 0, 0));
         logoPanel.setBorder(BorderFactory.createEmptyBorder(30, 20, 20, 20));
         
-        JLabel logoLabel = new JLabel("🏫");
-        logoLabel.setFont(new Font("Arial", Font.PLAIN, 32));
-        logoLabel.setForeground(new Color(0, 102, 204));
+        JLabel logoLabel = new JLabel("SH");
+        logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 34));
+        logoLabel.setForeground(new Color(191, 219, 254));
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
         JLabel systemLabel = new JLabel("School Helpdesk", SwingConstants.CENTER);
-        systemLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        systemLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         systemLabel.setForeground(Color.WHITE);
         systemLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
         JLabel subtitleLabel = new JLabel("Student Portal", SwingConstants.CENTER);
-        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 10));
-        subtitleLabel.setForeground(new Color(200, 200, 200));
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        subtitleLabel.setForeground(new Color(148, 163, 184));
         subtitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
         JPanel logoTextPanel = new JPanel(new BorderLayout());
@@ -334,13 +355,24 @@ public class StudentDashboard extends JFrame {
 
     private JPanel createDashboardPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 14));
-        panel.setBackground(new Color(240, 248, 255));
+        panel.setBackground(APP_BG);
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JLabel heading = new JLabel("User Dashboard");
-        heading.setFont(new Font("Arial", Font.BOLD, 24));
-        heading.setForeground(new Color(0, 61, 122));
-        panel.add(heading, BorderLayout.NORTH);
+        JLabel heading = createPageHeader("Student Dashboard");
+        JButton submitTicketTopButton = new JButton("Submit New Ticket");
+        submitTicketTopButton.setBackground(new Color(34, 139, 34));
+        submitTicketTopButton.setForeground(Color.WHITE);
+        submitTicketTopButton.setFont(LABEL_FONT);
+        submitTicketTopButton.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
+        submitTicketTopButton.setFocusPainted(false);
+        submitTicketTopButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        submitTicketTopButton.addActionListener(e -> showCreateTicketDialog());
+
+        JPanel topBar = new JPanel(new BorderLayout());
+        topBar.setOpaque(false);
+        topBar.add(heading, BorderLayout.WEST);
+        topBar.add(submitTicketTopButton, BorderLayout.EAST);
+        panel.add(topBar, BorderLayout.NORTH);
 
         JPanel center = new JPanel(new GridLayout(2, 1, 12, 12));
         center.setOpaque(false);
@@ -354,23 +386,23 @@ public class StudentDashboard extends JFrame {
     private JPanel createStatsPanel() {
         JPanel stats = new JPanel(new GridLayout(1, 4, 12, 12));
         stats.setOpaque(false);
-        stats.add(createStatCard("Total Tickets Submitted", totalTicketsValueLabel, new Color(0, 102, 204)));
-        stats.add(createStatCard("Tickets Pending", pendingTicketsValueLabel, new Color(255, 140, 0)));
-        stats.add(createStatCard("Tickets In Progress", inProgressTicketsValueLabel, new Color(65, 105, 225)));
-        stats.add(createStatCard("Tickets Resolved", resolvedTicketsValueLabel, new Color(34, 139, 34)));
+        stats.add(createStatCard("Total Tickets", totalTicketsValueLabel, BRAND));
+        stats.add(createStatCard("Pending", pendingTicketsValueLabel, new Color(245, 158, 11)));
+        stats.add(createStatCard("In Progress", inProgressTicketsValueLabel, new Color(6, 182, 212)));
+        stats.add(createStatCard("Resolved", resolvedTicketsValueLabel, new Color(22, 163, 74)));
         return stats;
     }
 
     private JPanel createStatCard(String labelText, JLabel valueLabel, Color accent) {
         JPanel card = new JPanel(new BorderLayout(0, 8));
-        card.setBackground(Color.WHITE);
+        card.setBackground(SURFACE_BG);
         card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(accent, 2),
+            BorderFactory.createLineBorder(BORDER, 1),
             new EmptyBorder(12, 12, 12, 12)
         ));
         JLabel label = new JLabel(labelText, SwingConstants.CENTER);
-        label.setFont(new Font("Arial", Font.BOLD, 13));
-        label.setForeground(accent);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        label.setForeground(TEXT_PRIMARY);
         valueLabel.setForeground(accent);
         card.add(label, BorderLayout.NORTH);
         card.add(valueLabel, BorderLayout.CENTER);
@@ -382,29 +414,27 @@ public class StudentDashboard extends JFrame {
         panel.setOpaque(false);
 
         JPanel actionsCard = new JPanel(new BorderLayout(10, 10));
-        actionsCard.setBackground(Color.WHITE);
+        actionsCard.setBackground(SURFACE_BG);
         actionsCard.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204), 2),
+            BorderFactory.createLineBorder(BORDER, 1),
             new EmptyBorder(16, 16, 16, 16)
         ));
         JLabel actionsTitle = new JLabel("Quick Action");
-        actionsTitle.setFont(new Font("Arial", Font.BOLD, 16));
-        JButton submitTicketButton = new JButton("Submit New Ticket");
-        submitTicketButton.setFont(new Font("Arial", Font.BOLD, 14));
-        submitTicketButton.setFocusPainted(false);
-        submitTicketButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        submitTicketButton.addActionListener(e -> showCreateTicketDialog());
+        actionsTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        JLabel actionsDescription = new JLabel("<html>Use the <b>Submit New Ticket</b> button at the top to create a request quickly.</html>");
+        actionsDescription.setFont(BODY_FONT);
+        actionsDescription.setForeground(TEXT_MUTED);
         actionsCard.add(actionsTitle, BorderLayout.NORTH);
-        actionsCard.add(submitTicketButton, BorderLayout.CENTER);
+        actionsCard.add(actionsDescription, BorderLayout.CENTER);
 
         JPanel notifCard = new JPanel(new BorderLayout(6, 8));
-        notifCard.setBackground(Color.WHITE);
+        notifCard.setBackground(SURFACE_BG);
         notifCard.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 166, 0), 2),
+            BorderFactory.createLineBorder(BORDER, 1),
             new EmptyBorder(12, 12, 12, 12)
         ));
-        JLabel notifTitle = new JLabel("Notification Panel");
-        notifTitle.setFont(new Font("Arial", Font.BOLD, 16));
+        JLabel notifTitle = new JLabel("Notification Center");
+        notifTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
         notifCard.add(notifTitle, BorderLayout.NORTH);
         notifCard.add(new JScrollPane(updatesArea), BorderLayout.CENTER);
 
@@ -415,14 +445,16 @@ public class StudentDashboard extends JFrame {
 
     private JPanel createTicketsPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 12));
-        panel.setBackground(new Color(240, 248, 255));
+        panel.setBackground(APP_BG);
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JLabel title = new JLabel("My Tickets");
-        title.setFont(new Font("Arial", Font.BOLD, 24));
-        title.setForeground(new Color(0, 61, 122));
+        JLabel title = createPageHeader("My Tickets");
 
         JButton viewDetailsButton = new JButton("View Details");
+        viewDetailsButton.setBackground(BRAND);
+        viewDetailsButton.setForeground(Color.WHITE);
+        viewDetailsButton.setFont(LABEL_FONT);
+        viewDetailsButton.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
         viewDetailsButton.setFocusPainted(false);
         viewDetailsButton.addActionListener(e -> showTicketDetailsDialog());
 
@@ -432,18 +464,22 @@ public class StudentDashboard extends JFrame {
         top.add(viewDetailsButton, BorderLayout.EAST);
 
         panel.add(top, BorderLayout.NORTH);
-        panel.add(new JScrollPane(ticketsTable), BorderLayout.CENTER);
+        panel.add(wrapAsSectionSurface("Ticket List", new JScrollPane(ticketsTable)), BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel createProfilePanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(240, 248, 255));
+        panel.setBackground(APP_BG);
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        
+        JLabel title = createPageHeader("Profile");
 
         JTextArea profileArea = new JTextArea();
         profileArea.setEditable(false);
-        profileArea.setFont(new Font("Arial", Font.PLAIN, 14));
+        profileArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        profileArea.setBackground(SURFACE_BG);
+        profileArea.setBorder(new EmptyBorder(12, 12, 12, 12));
         profileArea.setText(
             "Profile Information\n\n" +
             "Full Name: " + currentUser.getFullName() + "\n" +
@@ -451,7 +487,8 @@ public class StudentDashboard extends JFrame {
             "Email: " + currentUser.getEmail() + "\n" +
             "Role: " + currentUser.getRole() + "\n"
         );
-        panel.add(new JScrollPane(profileArea), BorderLayout.CENTER);
+        panel.add(title, BorderLayout.NORTH);
+        panel.add(wrapAsSectionSurface("Account Details", new JScrollPane(profileArea)), BorderLayout.CENTER);
         return panel;
     }
 
@@ -475,17 +512,37 @@ public class StudentDashboard extends JFrame {
         CardLayout cardLayout = (CardLayout) contentPanel.getLayout();
         cardLayout.show(contentPanel, panelName);
         resetSidebarButtons();
-        activeButton.setBackground(new Color(0, 102, 204));
-        if (activeButton == logoutButton) {
-            activeButton.setBackground(new Color(160, 35, 45));
-        }
+        setSidebarButtonActive(activeButton, true);
     }
 
     private void resetSidebarButtons() {
-        dashboardButton.setBackground(new Color(40, 40, 52));
-        myTicketsButton.setBackground(new Color(40, 40, 52));
-        profileButton.setBackground(new Color(40, 40, 52));
-        logoutButton.setBackground(new Color(160, 35, 45));
+        setSidebarButtonActive(dashboardButton, false);
+        setSidebarButtonActive(myTicketsButton, false);
+        setSidebarButtonActive(profileButton, false);
+        setSidebarButtonActive(logoutButton, false);
+    }
+
+    private void setSidebarButtonActive(JButton button, boolean active) {
+        boolean isLogout = Boolean.TRUE.equals(button.getClientProperty("logout"));
+        if (isLogout) {
+            button.setBackground(new Color(220, 53, 69));
+            button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(185, 28, 28), 1),
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)
+            ));
+            return;
+        }
+        button.putClientProperty("active", active);
+        button.setBackground(active ? BRAND : new Color(51, 65, 85));
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(active ? BRAND_DARK : new Color(71, 85, 105), 1),
+            BorderFactory.createEmptyBorder(12, 16, 12, 16)
+        ));
+    }
+
+    private boolean isSidebarButtonActive(JButton button) {
+        Object value = button.getClientProperty("active");
+        return value instanceof Boolean && (Boolean) value;
     }
 
     private void setupFrame() {
@@ -582,7 +639,7 @@ public class StudentDashboard extends JFrame {
             builder.append("No new updates yet.");
         }
         updatesArea.setText(builder.toString());
-        notificationIconLabel.setText("🔔 " + updateCount + " updates");
+        notificationIconLabel.setText("Notifications: " + updateCount);
     }
 
     private String normalizeStatus(String status) {
@@ -633,11 +690,8 @@ public class StudentDashboard extends JFrame {
 
     private void showCreateTicketDialog() {
         JDialog dialog = new JDialog(this, "Submit New Ticket", true);
-        dialog.setSize(620, 430);
+        dialog.setSize(680, 500);
         dialog.setLocationRelativeTo(this);
-
-        JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
-        form.setBorder(new EmptyBorder(16, 16, 16, 16));
 
         JTextField titleField = new JTextField();
         JComboBox<String> departmentCombo = new JComboBox<>(
@@ -648,19 +702,67 @@ public class StudentDashboard extends JFrame {
         );
         JTextArea descriptionArea = new JTextArea(5, 20);
         JScrollPane descriptionScroll = new JScrollPane(descriptionArea);
-
-        form.add(new JLabel("Issue Title:"));
-        form.add(titleField);
-        form.add(new JLabel("Department:"));
-        form.add(departmentCombo);
-        form.add(new JLabel("Priority:"));
-        form.add(priorityCombo);
-        form.add(new JLabel("Description:"));
-        form.add(descriptionScroll);
+        
+        titleField.setFont(BODY_FONT);
+        titleField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1),
+            BorderFactory.createEmptyBorder(8, 10, 8, 10)
+        ));
+        departmentCombo.setFont(BODY_FONT);
+        priorityCombo.setFont(BODY_FONT);
+        descriptionArea.setFont(BODY_FONT);
+        descriptionArea.setLineWrap(true);
+        descriptionArea.setWrapStyleWord(true);
+        descriptionArea.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        descriptionScroll.setBorder(BorderFactory.createLineBorder(BORDER, 1));
+        styleDialogComboBox(departmentCombo);
+        styleDialogComboBox(priorityCombo);
+        
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(SURFACE_BG);
+        form.setBorder(new EmptyBorder(16, 16, 8, 16));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 0, 12, 0);
+        gbc.gridx = 0;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        gbc.gridy = 0;
+        form.add(createDialogLabel("Issue Title"), gbc);
+        gbc.gridy = 1;
+        form.add(titleField, gbc);
+        
+        gbc.gridy = 2;
+        form.add(createDialogLabel("Department"), gbc);
+        gbc.gridy = 3;
+        form.add(departmentCombo, gbc);
+        
+        gbc.gridy = 4;
+        form.add(createDialogLabel("Priority"), gbc);
+        gbc.gridy = 5;
+        form.add(priorityCombo, gbc);
+        
+        gbc.gridy = 6;
+        form.add(createDialogLabel("Description"), gbc);
+        gbc.gridy = 7;
+        gbc.weighty = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        form.add(descriptionScroll, gbc);
 
         JButton submitButton = new JButton("Submit Ticket");
         JButton cancelButton = new JButton("Cancel");
-        JPanel actionButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        submitButton.setBackground(BRAND);
+        submitButton.setForeground(Color.WHITE);
+        submitButton.setFont(LABEL_FONT);
+        submitButton.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
+        submitButton.setFocusPainted(false);
+        cancelButton.setFont(LABEL_FONT);
+        cancelButton.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
+        
+        JPanel actionButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 12));
+        actionButtons.setBackground(SURFACE_BG);
+        actionButtons.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER));
         actionButtons.add(submitButton);
         actionButtons.add(cancelButton);
 
@@ -694,9 +796,31 @@ public class StudentDashboard extends JFrame {
 
         cancelButton.addActionListener(e -> dialog.dispose());
 
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(SURFACE_BG);
+        header.setBorder(new EmptyBorder(14, 16, 8, 16));
+        JLabel title = new JLabel("Submit New Ticket");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        title.setForeground(TEXT_PRIMARY);
+        JLabel subtitle = new JLabel("Provide complete details so staff can assist faster.");
+        subtitle.setFont(BODY_FONT);
+        subtitle.setForeground(TEXT_MUTED);
+        JPanel titleWrap = new JPanel(new GridLayout(0, 1));
+        titleWrap.setOpaque(false);
+        titleWrap.add(title);
+        titleWrap.add(subtitle);
+        header.add(titleWrap, BorderLayout.WEST);
+
+        JPanel container = new JPanel(new BorderLayout());
+        container.setBackground(SURFACE_BG);
+        container.setBorder(BorderFactory.createLineBorder(BORDER, 1));
+        container.add(header, BorderLayout.NORTH);
+        container.add(form, BorderLayout.CENTER);
+        container.add(actionButtons, BorderLayout.SOUTH);
+        
         dialog.setLayout(new BorderLayout());
-        dialog.add(form, BorderLayout.CENTER);
-        dialog.add(actionButtons, BorderLayout.SOUTH);
+        dialog.getContentPane().setBackground(APP_BG);
+        dialog.add(container, BorderLayout.CENTER);
         dialog.setVisible(true);
     }
 
@@ -757,6 +881,74 @@ public class StudentDashboard extends JFrame {
     private void manualRefresh() {
         loadUserDashboardData();
         JOptionPane.showMessageDialog(this, "Dashboard refreshed.", "Refresh", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private JLabel createPageHeader(String text) {
+        JLabel title = new JLabel(text);
+        title.setFont(TITLE_FONT);
+        title.setForeground(TEXT_PRIMARY);
+        return title;
+    }
+
+    private JPanel wrapAsSectionSurface(String titleText, JComponent content) {
+        JPanel surface = new JPanel(new BorderLayout(0, 8));
+        surface.setBackground(SURFACE_BG);
+        surface.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1),
+            BorderFactory.createEmptyBorder(12, 12, 12, 12)
+        ));
+        JLabel title = new JLabel(titleText);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        title.setForeground(TEXT_PRIMARY);
+        title.setBorder(new EmptyBorder(0, 2, 4, 2));
+        surface.add(title, BorderLayout.NORTH);
+        surface.add(content, BorderLayout.CENTER);
+        return surface;
+    }
+    
+    private JLabel createDialogLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        label.setForeground(TEXT_PRIMARY);
+        return label;
+    }
+    
+    private void styleDialogComboBox(JComboBox<String> comboBox) {
+        comboBox.setBackground(Color.WHITE);
+        comboBox.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+        comboBox.setPreferredSize(new Dimension(0, 36));
+    }
+
+    private void styleModernTable(JTable table) {
+        table.setRowHeight(32);
+        table.setFont(BODY_FONT);
+        table.getTableHeader().setFont(LABEL_FONT);
+        table.getTableHeader().setBackground(BRAND_DARK);
+        table.getTableHeader().setForeground(Color.WHITE);
+        table.getTableHeader().setPreferredSize(new Dimension(0, 38));
+        table.getTableHeader().setReorderingAllowed(false);
+        table.setSelectionBackground(new Color(219, 234, 254));
+        table.setSelectionForeground(TEXT_PRIMARY);
+        table.setGridColor(BORDER);
+        table.setIntercellSpacing(new Dimension(0, 1));
+        table.setRowMargin(0);
+        table.setFillsViewportHeight(true);
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                           boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(248, 250, 252));
+                    c.setForeground(TEXT_PRIMARY);
+                }
+                setBorder(new EmptyBorder(0, 8, 0, 8));
+                return c;
+            }
+        });
     }
 
     private void startLiveUpdates() {

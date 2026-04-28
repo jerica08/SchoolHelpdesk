@@ -7,6 +7,7 @@ import schoolhelpdesk.dao.DepartmentDAO;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -272,6 +273,7 @@ public class BeautifulAdminDashboard extends JFrame {
         navPanel.add(usersButton);
         navPanel.add(departmentsButton);
         navPanel.add(reportsButton);
+        styleSidebarButtonsUniform();
         
         // Modern User info panel
         JPanel userInfoPanel = new JPanel(new BorderLayout()) {
@@ -638,13 +640,16 @@ public class BeautifulAdminDashboard extends JFrame {
         // Title for tickets panel
         JLabel ticketsTitle = createPageHeader("Ticket Management");
         
-        // Enhanced action buttons panel
-        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // Enhanced action panel
+        JPanel actionsPanel = new JPanel(new BorderLayout(0, 10));
         actionsPanel.setBackground(SURFACE_BG);
         actionsPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(BORDER, 1),
             BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
+        
+        JPanel actionButtonsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        actionButtonsRow.setOpaque(false);
         
         // Style action buttons
         styleButton(approveButton, SUCCESS, "Approve");
@@ -652,40 +657,41 @@ public class BeautifulAdminDashboard extends JFrame {
         styleButton(redirectButton, WARNING, "Redirect");
         styleButton(clarifyButton, new Color(14, 116, 144), "Request Info");
         
-        actionsPanel.add(approveButton);
-        actionsPanel.add(rejectButton);
-        actionsPanel.add(redirectButton);
-        actionsPanel.add(clarifyButton);
-        actionsPanel.add(Box.createHorizontalStrut(20));
+        actionButtonsRow.add(approveButton);
+        actionButtonsRow.add(rejectButton);
+        actionButtonsRow.add(redirectButton);
+        actionButtonsRow.add(clarifyButton);
         
         // Assignment section
-        JLabel deptFilterLabel = new JLabel("Department:");
+        JPanel assignmentRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        assignmentRow.setOpaque(false);
+        
+        JLabel deptFilterLabel = new JLabel("Department");
         deptFilterLabel.setFont(LABEL_FONT);
         deptFilterLabel.setForeground(TEXT_PRIMARY);
-        actionsPanel.add(deptFilterLabel);
+        assignmentRow.add(deptFilterLabel);
         
-        departmentFilterComboBox.setBackground(Color.WHITE);
-        departmentFilterComboBox.setBorder(BorderFactory.createLineBorder(BORDER, 1));
-        departmentFilterComboBox.setFont(BODY_FONT);
-        actionsPanel.add(departmentFilterComboBox);
+        styleComboBox(departmentFilterComboBox, new Dimension(170, 34));
+        assignmentRow.add(departmentFilterComboBox);
         
-        JLabel assignLabel = new JLabel("Assign to:");
+        JLabel assignLabel = new JLabel("Assign to");
         assignLabel.setFont(LABEL_FONT);
         assignLabel.setForeground(TEXT_PRIMARY);
-        actionsPanel.add(assignLabel);
+        assignmentRow.add(assignLabel);
         
-        staffComboBox.setBackground(Color.WHITE);
-        staffComboBox.setBorder(BorderFactory.createLineBorder(BORDER, 1));
-        staffComboBox.setFont(BODY_FONT);
-        actionsPanel.add(staffComboBox);
+        styleComboBox(staffComboBox, new Dimension(190, 34));
+        assignmentRow.add(staffComboBox);
         
         styleButton(assignButton, BRAND, "Assign Staff");
-        actionsPanel.add(assignButton);
+        assignmentRow.add(assignButton);
         
         // Add details button
         JButton detailsButton = new JButton("View Details");
         styleButton(detailsButton, new Color(59, 130, 246), "View Details");
-        actionsPanel.add(detailsButton);
+        assignmentRow.add(detailsButton);
+        
+        actionsPanel.add(actionButtonsRow, BorderLayout.NORTH);
+        actionsPanel.add(assignmentRow, BorderLayout.CENTER);
         
         // Enhanced tickets table
         JScrollPane ticketsScrollPane = createEnhancedTicketsScrollPane();
@@ -695,7 +701,7 @@ public class BeautifulAdminDashboard extends JFrame {
         topPanel.add(ticketsTitle, BorderLayout.NORTH);
         topPanel.add(actionsPanel, BorderLayout.CENTER);
         ticketsPanel.add(topPanel, BorderLayout.NORTH);
-        ticketsPanel.add(ticketsScrollPane, BorderLayout.CENTER);
+        ticketsPanel.add(wrapAsSectionSurface("Ticket Queue", ticketsScrollPane), BorderLayout.CENTER);
         
         // Add event handlers for ticket actions
         setupTicketActionHandlers(detailsButton);
@@ -959,18 +965,27 @@ public class BeautifulAdminDashboard extends JFrame {
         
         // Style user table
         styleModernTable(userTable);
+        userTable.getColumnModel().getColumn(0).setPreferredWidth(120);
+        userTable.getColumnModel().getColumn(1).setPreferredWidth(180);
+        userTable.getColumnModel().getColumn(2).setPreferredWidth(210);
+        userTable.getColumnModel().getColumn(3).setPreferredWidth(110);
+        userTable.getColumnModel().getColumn(4).setPreferredWidth(150);
+        userTable.getColumnModel().getColumn(5).setPreferredWidth(100);
         
         JScrollPane userScrollPane = new JScrollPane(userTable);
         userScrollPane.setBorder(BorderFactory.createLineBorder(BORDER, 1));
         userScrollPane.getViewport().setBackground(Color.WHITE);
         
         // Action buttons panel
-        JPanel userActionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel userActionsPanel = new JPanel(new BorderLayout(0, 10));
         userActionsPanel.setBackground(SURFACE_BG);
         userActionsPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(BORDER, 1),
             BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
+        
+        JPanel quickActionsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        quickActionsRow.setOpaque(false);
         
         JButton manageUsersButton = new JButton("Manage Users");
         styleButton(manageUsersButton, BRAND, "Manage Users");
@@ -978,15 +993,25 @@ public class BeautifulAdminDashboard extends JFrame {
         JButton refreshUsersButton = new JButton("Refresh");
         styleButton(refreshUsersButton, new Color(59, 130, 246), "Refresh");
         
-        userActionsPanel.add(manageUsersButton);
-        userActionsPanel.add(refreshUsersButton);
+        quickActionsRow.add(manageUsersButton);
+        quickActionsRow.add(refreshUsersButton);
+        
+        JPanel helperRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        helperRow.setOpaque(false);
+        JLabel helperLabel = new JLabel("Manage account access, roles, and activation status");
+        helperLabel.setFont(BODY_FONT);
+        helperLabel.setForeground(TEXT_MUTED);
+        helperRow.add(helperLabel);
+        
+        userActionsPanel.add(quickActionsRow, BorderLayout.NORTH);
+        userActionsPanel.add(helperRow, BorderLayout.CENTER);
         
         JPanel topPanel = new JPanel(new BorderLayout(0, 12));
         topPanel.setOpaque(false);
         topPanel.add(usersTitle, BorderLayout.NORTH);
         topPanel.add(userActionsPanel, BorderLayout.CENTER);
         usersPanel.add(topPanel, BorderLayout.NORTH);
-        usersPanel.add(userScrollPane, BorderLayout.CENTER);
+        usersPanel.add(wrapAsSectionSurface("Registered Users", userScrollPane), BorderLayout.CENTER);
         
         // Store table reference for later use
         usersPanel.putClientProperty("userTable", userTable);
@@ -1041,7 +1066,7 @@ public class BeautifulAdminDashboard extends JFrame {
         topPanel.add(deptTitle, BorderLayout.NORTH);
         topPanel.add(deptActionsPanel, BorderLayout.CENTER);
         departmentsPanel.add(topPanel, BorderLayout.NORTH);
-        departmentsPanel.add(deptScrollPane, BorderLayout.CENTER);
+        departmentsPanel.add(wrapAsSectionSurface("Department Directory", deptScrollPane), BorderLayout.CENTER);
         
         // Store table reference for later use
         departmentsPanel.putClientProperty("deptTable", deptTable);
@@ -1076,8 +1101,11 @@ public class BeautifulAdminDashboard extends JFrame {
         note.setForeground(TEXT_MUTED);
         footer.add(note);
         
+        JPanel reportsCenter = new JPanel(new BorderLayout(0, 12));
+        reportsCenter.setOpaque(false);
+        reportsCenter.add(wrapAsSectionSurface("Platform Insights", analyticsGrid), BorderLayout.CENTER);
         reportsPanel.add(reportsTitle, BorderLayout.NORTH);
-        reportsPanel.add(analyticsGrid, BorderLayout.CENTER);
+        reportsPanel.add(reportsCenter, BorderLayout.CENTER);
         reportsPanel.add(footer, BorderLayout.SOUTH);
     }
     
@@ -1123,6 +1151,18 @@ public class BeautifulAdminDashboard extends JFrame {
         setButtonActive(departmentsButton, false);
         setButtonActive(reportsButton, false);
     }
+    
+    private void styleSidebarButtonsUniform() {
+        JButton[] buttons = {dashboardButton, ticketsButton, usersButton, departmentsButton, reportsButton};
+        for (JButton button : buttons) {
+            button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            button.setPreferredSize(new Dimension(210, 46));
+            button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(isButtonActive(button) ? BRAND_DARK : new Color(71, 85, 105), 1),
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)
+            ));
+        }
+    }
 
     private void setButtonActive(JButton button, boolean active) {
         button.putClientProperty("active", active);
@@ -1144,6 +1184,34 @@ public class BeautifulAdminDashboard extends JFrame {
         title.setForeground(TEXT_PRIMARY);
         title.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
         return title;
+    }
+    
+    private JPanel wrapAsSectionSurface(String sectionTitle, JComponent content) {
+        JPanel surface = new JPanel(new BorderLayout(0, 8));
+        surface.setBackground(SURFACE_BG);
+        surface.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1),
+            BorderFactory.createEmptyBorder(12, 12, 12, 12)
+        ));
+        
+        JLabel title = new JLabel(sectionTitle);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        title.setForeground(TEXT_PRIMARY);
+        title.setBorder(new EmptyBorder(0, 2, 4, 2));
+        
+        surface.add(title, BorderLayout.NORTH);
+        surface.add(content, BorderLayout.CENTER);
+        return surface;
+    }
+    
+    private void styleComboBox(JComboBox<String> comboBox, Dimension size) {
+        comboBox.setBackground(Color.WHITE);
+        comboBox.setFont(BODY_FONT);
+        comboBox.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1),
+            BorderFactory.createEmptyBorder(4, 6, 4, 6)
+        ));
+        comboBox.setPreferredSize(size);
     }
     
     private JPanel createInfoCard(String title, String value, String subtitle, Color accent) {
@@ -1179,11 +1247,28 @@ public class BeautifulAdminDashboard extends JFrame {
         table.getTableHeader().setBackground(BRAND_DARK);
         table.getTableHeader().setForeground(Color.WHITE);
         table.getTableHeader().setPreferredSize(new Dimension(0, 38));
+        table.getTableHeader().setReorderingAllowed(false);
         table.setSelectionBackground(new Color(219, 234, 254));
         table.setSelectionForeground(TEXT_PRIMARY);
         table.setGridColor(BORDER);
         table.setShowGrid(true);
+        table.setIntercellSpacing(new Dimension(0, 1));
+        table.setRowMargin(0);
         table.setFillsViewportHeight(true);
+        
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                           boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(248, 250, 252));
+                    c.setForeground(TEXT_PRIMARY);
+                }
+                setBorder(new EmptyBorder(0, 8, 0, 8));
+                return c;
+            }
+        });
     }
     
     private void loadInitialData() {
