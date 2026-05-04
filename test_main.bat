@@ -1,22 +1,7 @@
 @echo off
-echo Testing SchoolHelpdesk main class...
+echo Run SchoolHelpdesk (uses run.bat: JDK + lib JARs, no Maven required).
 echo.
 
-cd /d "C:\Users\USER\OneDrive\Documents\NetBeansProjects\SchoolHelpdesk"
-
-echo Setting classpath...
-set CLASSPATH=src;build\classes
-
-echo Compiling SchoolHelpdesk.java...
-javac -d build\classes -cp "%CLASSPATH%" src\schoolhelpdesk\SchoolHelpdesk.java
-
-if %ERRORLEVEL% EQU 0 (
-    echo Compilation successful!
-    echo.
-    echo Running SchoolHelpdesk...
-    java -cp build\classes schoolhelpdesk.SchoolHelpdesk
-) else (
-    echo Compilation failed with error %ERRORLEVEL%
-)
-
+cd /d "%~dp0"
+call run.bat
 pause
