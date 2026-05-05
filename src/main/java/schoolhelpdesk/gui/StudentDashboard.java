@@ -64,6 +64,8 @@ extends JFrame {
     private static final Font TITLE_FONT = new Font("Segoe UI", 1, 24);
     private static final Font BODY_FONT = new Font("Segoe UI", 0, 12);
     private static final Font LABEL_FONT = new Font("Segoe UI", 1, 12);
+    private static final Color GREEN_SUBMIT = new Color(34, 139, 34);
+    private static final Color GREEN_SUBMIT_HOVER = new Color(22, 163, 74);
     private final User currentUser;
     private final TicketDAO ticketDAO;
     private List<Document> cachedUserTickets;
@@ -308,12 +310,7 @@ extends JFrame {
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
         JLabel heading = this.createPageHeader("Student Dashboard");
         JButton submitTicketTopButton = new JButton("Submit New Ticket");
-        submitTicketTopButton.setBackground(new Color(34, 139, 34));
-        submitTicketTopButton.setForeground(Color.WHITE);
-        submitTicketTopButton.setFont(LABEL_FONT);
-        submitTicketTopButton.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
-        submitTicketTopButton.setFocusPainted(false);
-        submitTicketTopButton.setCursor(new Cursor(12));
+        this.styleSolidGreenButton(submitTicketTopButton);
         submitTicketTopButton.addActionListener(e -> this.showCreateTicketDialog());
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setOpaque(false);
@@ -323,7 +320,7 @@ extends JFrame {
         JPanel center = new JPanel(new GridLayout(2, 1, 12, 12));
         center.setOpaque(false);
         center.add(this.createStatsPanel());
-        center.add(this.createActionAndNotificationPanel());
+        center.add(this.createNotificationPanel());
         panel.add((Component)center, "Center");
         return panel;
     }
@@ -351,29 +348,17 @@ extends JFrame {
         return card;
     }
 
-    private JPanel createActionAndNotificationPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 2, 12, 12));
-        panel.setOpaque(false);
-        JPanel actionsCard = new JPanel(new BorderLayout(10, 10));
-        actionsCard.setBackground(SURFACE_BG);
-        actionsCard.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER, 1), new EmptyBorder(16, 16, 16, 16)));
-        JLabel actionsTitle = new JLabel("Quick Action");
-        actionsTitle.setFont(new Font("Segoe UI", 1, 16));
-        JLabel actionsDescription = new JLabel("<html>Use the <b>Submit New Ticket</b> button at the top to create a request quickly.</html>");
-        actionsDescription.setFont(BODY_FONT);
-        actionsDescription.setForeground(TEXT_MUTED);
-        actionsCard.add((Component)actionsTitle, "North");
-        actionsCard.add((Component)actionsDescription, "Center");
+    private JPanel createNotificationPanel() {
         JPanel notifCard = new JPanel(new BorderLayout(6, 8));
         notifCard.setBackground(SURFACE_BG);
         notifCard.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER, 1), new EmptyBorder(12, 12, 12, 12)));
         JLabel notifTitle = new JLabel("Notification Center");
         notifTitle.setFont(new Font("Segoe UI", 1, 16));
         notifCard.add((Component)notifTitle, "North");
-        notifCard.add((Component)new JScrollPane(this.updatesArea), "Center");
-        panel.add(actionsCard);
-        panel.add(notifCard);
-        return panel;
+        JScrollPane scroll = new JScrollPane(this.updatesArea);
+        scroll.setBorder(BorderFactory.createLineBorder(BORDER, 1));
+        notifCard.add((Component)scroll, "Center");
+        return notifCard;
     }
 
     private JPanel createTicketsPanel() {
@@ -758,6 +743,33 @@ extends JFrame {
     private void manualRefresh() {
         this.loadUserDashboardData();
         JOptionPane.showMessageDialog(this, "Dashboard refreshed.", "Refresh", 1);
+    }
+
+    /**
+     * Ensures a filled green background on common Swing look-and-feels (Metal/Nimbus/Windows).
+     */
+    private void styleSolidGreenButton(JButton button) {
+        button.setBackground(GREEN_SUBMIT);
+        button.setForeground(Color.WHITE);
+        button.setFont(LABEL_FONT);
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
+        button.addMouseListener(new MouseAdapter(){
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(GREEN_SUBMIT_HOVER);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(GREEN_SUBMIT);
+            }
+        });
     }
 
     private JLabel createPageHeader(String text) {

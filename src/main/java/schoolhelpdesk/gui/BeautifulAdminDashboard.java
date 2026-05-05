@@ -39,11 +39,15 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumnModel;
 import org.bson.Document;
 import schoolhelpdesk.dao.DepartmentDAO;
 import schoolhelpdesk.dao.TicketDAO;
@@ -587,6 +591,7 @@ extends JFrame {
 
     private JScrollPane createEnhancedTicketsScrollPane() {
         this.styleModernTable(this.ticketsTable);
+        this.applyBlackTextTableHeader(this.ticketsTable);
         JScrollPane scrollPane = new JScrollPane(this.ticketsTable);
         scrollPane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER, 1), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
         scrollPane.getViewport().setBackground(Color.WHITE);
@@ -774,6 +779,7 @@ extends JFrame {
         };
         JTable userTable = new JTable(userTableModel);
         this.styleModernTable(userTable);
+        this.applyBlackTextTableHeader(userTable);
         userTable.getColumnModel().getColumn(0).setPreferredWidth(120);
         userTable.getColumnModel().getColumn(1).setPreferredWidth(180);
         userTable.getColumnModel().getColumn(2).setPreferredWidth(210);
@@ -820,10 +826,11 @@ extends JFrame {
         this.departmentsPanel.setBackground(APP_BG);
         this.departmentsPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
         JLabel deptTitle = this.createPageHeader("Department Management");
-        Object[] deptColumns = new String[]{"Department ID", "Name", "Staff Count", "Head of Department", "Status"};
-        DefaultTableModel deptTableModel = new DefaultTableModel(deptColumns, 0);
+        DefaultTableModel deptTableModel = this.createDepartmentDirectoryTableModel();
         JTable deptTable = new JTable(deptTableModel);
         this.styleModernTable(deptTable);
+        this.applyBlackTextTableHeader(deptTable);
+        this.configureDepartmentDirectoryTable(deptTable);
         JScrollPane deptScrollPane = new JScrollPane(deptTable);
         deptScrollPane.setBorder(BorderFactory.createLineBorder(BORDER, 1));
         deptScrollPane.getViewport().setBackground(Color.WHITE);
@@ -985,6 +992,76 @@ extends JFrame {
         return card;
     }
 
+    private void applyBlackTextTableHeader(JTable table) {
+        JTableHeader header = table.getTableHeader();
+        header.setOpaque(true);
+        header.setBackground(new Color(248, 250, 252));
+        header.setForeground(Color.BLACK);
+        header.setFont(LABEL_FONT);
+        header.setDefaultRenderer(new DefaultTableCellRenderer(){
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                label.setBackground(new Color(248, 250, 252));
+                label.setForeground(Color.BLACK);
+                label.setFont(LABEL_FONT);
+                label.setOpaque(true);
+                label.setHorizontalAlignment(SwingConstants.LEFT);
+                label.setVerticalAlignment(SwingConstants.CENTER);
+                label.setIcon(null);
+                label.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER), new EmptyBorder(6, 10, 6, 10)));
+                return label;
+            }
+        });
+    }
+
+    private DefaultTableModel createDepartmentDirectoryTableModel() {
+        return new DefaultTableModel(new String[]{"Department ID", "Name", "Staff Count", "Head of Department", "Status"}, 0){
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return String.class;
+            }
+        };
+    }
+
+    private void configureDepartmentDirectoryTable(JTable table) {
+        table.setRowSelectionAllowed(true);
+        table.setColumnSelectionAllowed(false);
+        table.setCellSelectionEnabled(false);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        TableColumnModel colModel = table.getColumnModel();
+        colModel.getColumn(0).setPreferredWidth(200);
+        colModel.getColumn(1).setPreferredWidth(220);
+        colModel.getColumn(2).setPreferredWidth(110);
+        colModel.getColumn(3).setPreferredWidth(220);
+        colModel.getColumn(4).setPreferredWidth(100);
+        table.setDefaultRenderer(String.class, new DefaultTableCellRenderer(){
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel c = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (isSelected) {
+                    c.setBackground(table.getSelectionBackground());
+                    c.setForeground(table.getSelectionForeground());
+                } else {
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(248, 250, 252));
+                    c.setForeground(TEXT_PRIMARY);
+                }
+                c.setHorizontalAlignment(SwingConstants.LEFT);
+                c.setBorder(new EmptyBorder(0, 10, 0, 10));
+                return c;
+            }
+        });
+    }
+
     private void styleModernTable(JTable table) {
         table.setRowHeight(32);
         table.setFont(BODY_FONT);
@@ -1120,8 +1197,12 @@ extends JFrame {
                 for (Document dept : departments) {
                     List staffMembers = (List)dept.get((Object)"staffMembers");
                     int staffCount = staffMembers != null ? staffMembers.size() : 0;
-                    Object[] row = new Object[]{dept.getString((Object)"departmentId") != null ? dept.getString((Object)"departmentId") : "", dept.getString((Object)"name") != null ? dept.getString((Object)"name") : "", staffCount, dept.getString((Object)"headOfDepartment") != null ? dept.getString((Object)"headOfDepartment") : "Not assigned", dept.getBoolean((Object)"active") != null && dept.getBoolean((Object)"active") != false ? "Active" : "Inactive"};
-                    deptTableModel.addRow(row);
+                    String deptId = dept.getString((Object)"departmentId") != null ? dept.getString((Object)"departmentId") : "";
+                    String deptName = dept.getString((Object)"name") != null ? dept.getString((Object)"name") : "";
+                    String head = dept.getString((Object)"headOfDepartment") != null ? dept.getString((Object)"headOfDepartment") : "Not assigned";
+                    String status = dept.getBoolean((Object)"active") != null && dept.getBoolean((Object)"active") != false ? "Active" : "Inactive";
+                    Object[] deptRow = new Object[]{deptId, deptName, String.valueOf(staffCount), head, status};
+                    deptTableModel.addRow(deptRow);
                 }
             }
         }
