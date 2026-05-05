@@ -45,17 +45,67 @@ public class SetupDatabase {
         users.insertOne(new Document("username", (Object)"admin").append("password", (Object)"admin123").append("role", (Object)"admin").append("email", (Object)"admin@school.edu").append("fullName", (Object)"System Administrator"));
         users.insertOne(new Document("username", (Object)"staff").append("password", (Object)"staff123").append("role", (Object)"staff").append("email", (Object)"staff@school.edu").append("fullName", (Object)"Support Staff"));
         users.insertOne(new Document("username", (Object)"student").append("password", (Object)"student123").append("role", (Object)"student").append("email", (Object)"student@school.edu").append("fullName", (Object)"John Student"));
-        System.out.println("\u2713 Users collection created with 3 sample users");
+        
+        // Add more staff users for different departments
+        users.insertOne(new Document("username", (Object)"itstaff1").append("password", (Object)"it123").append("role", (Object)"staff").append("email", (Object)"itstaff1@school.edu").append("fullName", (Object)"IT Technician"));
+        users.insertOne(new Document("username", (Object)"academic1").append("password", (Object)"acad123").append("role", (Object)"staff").append("email", (Object)"academic1@school.edu").append("fullName", (Object)"Academic Advisor"));
+        users.insertOne(new Document("username", (Object)"student1").append("password", (Object)"stud123").append("role", (Object)"staff").append("email", (Object)"student1@school.edu").append("fullName", (Object)"Student Counselor"));
+        users.insertOne(new Document("username", (Object)"finance1").append("password", (Object)"fin123").append("role", (Object)"staff").append("email", (Object)"finance1@school.edu").append("fullName", (Object)"Finance Officer"));
+        
+        System.out.println("\u2713 Users collection created with 7 sample users");
     }
 
     private static void setupDepartmentsCollection(MongoDatabase database) {
         MongoCollection departments = database.getCollection("departments");
         departments.deleteMany((Bson)new Document());
-        departments.insertOne(new Document("name", (Object)"IT Support").append("description", (Object)"Technical support and computer services").append("head", (Object)"IT Manager").append("location", (Object)"Building A, Room 101"));
-        departments.insertOne(new Document("name", (Object)"Academic Affairs").append("description", (Object)"Student academic services and records").append("head", (Object)"Academic Dean").append("location", (Object)"Building B, Room 205"));
-        departments.insertOne(new Document("name", (Object)"Student Services").append("description", (Object)"Student welfare and support services").append("head", (Object)"Student Services Director").append("location", (Object)"Building C, Room 150"));
-        departments.insertOne(new Document("name", (Object)"Finance").append("description", (Object)"Financial services and payments").append("head", (Object)"Finance Manager").append("location", (Object)"Building D, Room 300"));
-        System.out.println("\u2713 Departments collection created with 4 departments");
+        
+        // Create staff member lists for each department
+        java.util.List<String> itStaff = new java.util.ArrayList<>();
+        itStaff.add("staff"); // Assign the staff user to IT Support
+        itStaff.add("itstaff1"); // Add IT Technician
+        
+        java.util.List<String> academicStaff = new java.util.ArrayList<>();
+        academicStaff.add("academic1"); // Add Academic Advisor
+        
+        java.util.List<String> studentServicesStaff = new java.util.ArrayList<>();
+        studentServicesStaff.add("student1"); // Add Student Counselor
+        
+        java.util.List<String> financeStaff = new java.util.ArrayList<>();
+        financeStaff.add("finance1"); // Add Finance Officer
+        
+        departments.insertOne(new Document("name", (Object)"IT Support")
+            .append("description", (Object)"Technical support and computer services")
+            .append("head", (Object)"IT Manager")
+            .append("location", (Object)"Building A, Room 101")
+            .append("staffMembers", (Object)itStaff)
+            .append("active", (Object)true)
+            .append("createdDate", (Object)new Date()));
+            
+        departments.insertOne(new Document("name", (Object)"Academic Affairs")
+            .append("description", (Object)"Student academic services and records")
+            .append("head", (Object)"Academic Dean")
+            .append("location", (Object)"Building B, Room 205")
+            .append("staffMembers", (Object)academicStaff)
+            .append("active", (Object)true)
+            .append("createdDate", (Object)new Date()));
+            
+        departments.insertOne(new Document("name", (Object)"Student Services")
+            .append("description", (Object)"Student welfare and support services")
+            .append("head", (Object)"Student Services Director")
+            .append("location", (Object)"Building C, Room 150")
+            .append("staffMembers", (Object)studentServicesStaff)
+            .append("active", (Object)true)
+            .append("createdDate", (Object)new Date()));
+            
+        departments.insertOne(new Document("name", (Object)"Finance")
+            .append("description", (Object)"Financial services and payments")
+            .append("head", (Object)"Finance Manager")
+            .append("location", (Object)"Building D, Room 300")
+            .append("staffMembers", (Object)financeStaff)
+            .append("active", (Object)true)
+            .append("createdDate", (Object)new Date()));
+            
+        System.out.println("\u2713 Departments collection created with 4 departments and staff assignments");
     }
 
     private static void setupTicketsCollection(MongoDatabase database) {

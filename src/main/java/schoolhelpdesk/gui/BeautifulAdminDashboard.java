@@ -1150,40 +1150,101 @@ extends JFrame {
 
     private void loadDepartmentFilter() {
         try {
+            System.out.println("DEBUG: Loading department filter...");
             this.departmentFilterComboBox.removeAllItems();
             this.departmentFilterComboBox.addItem("All Departments");
+            
             List<Document> departments = this.departmentDAO.getActiveDepartments();
+            System.out.println("DEBUG: Found " + departments.size() + " active departments");
+            
             for (Document dept : departments) {
                 String deptName = dept.getString((Object)"name");
+                System.out.println("DEBUG: Processing department: " + deptName);
+                System.out.println("DEBUG: Department document: " + dept);
+                
                 if (deptName == null || deptName.trim().isEmpty()) continue;
                 this.departmentFilterComboBox.addItem(deptName);
+                System.out.println("DEBUG: Added department to combobox: " + deptName);
             }
+            
             this.departmentFilterComboBox.addActionListener(e -> this.filterStaffByDepartment());
+            System.out.println("DEBUG: Department filter loaded successfully");
         }
         catch (Exception e2) {
             System.err.println("Error loading department filter: " + e2.getMessage());
+            e2.printStackTrace();
         }
     }
 
     private void filterStaffByDepartment() {
         String selectedDept = (String)this.departmentFilterComboBox.getSelectedItem();
+        System.out.println("DEBUG: Selected department: " + selectedDept);
+        
         if (selectedDept == null || selectedDept.equals("All Departments")) {
+            System.out.println("DEBUG: Loading all staff members");
             this.loadStaffMembers();
             return;
         }
+        
         try {
-            List assignedStaff;
             this.staffComboBox.removeAllItems();
             this.staffComboBox.addItem("Select Staff Member...");
-            Document department = this.departmentDAO.getDepartmentByName(selectedDept);
-            if (department != null && (assignedStaff = (List)department.get((Object)"staffMembers")) != null) {
-                for (Object staffName : assignedStaff) {
-                    this.staffComboBox.addItem(String.valueOf(staffName));
+            
+            java.util.Set<String> addedStaffNames = new java.util.HashSet<>();
+            
+            // First, find all Staff users who have their department field set to selectedDept
+            List<Document> allStaff = this.userDAO.getUsersByRole("Staff");
+            if (allStaff != null) {
+                for (Document staffDoc : allStaff) {
+                    String userDept = staffDoc.getString("department");
+                    if (selectedDept.equals(userDept)) {
+                        String fullName = staffDoc.getString("fullName");
+                        if (fullName != null && !fullName.trim().isEmpty() && !addedStaffNames.contains(fullName)) {
+                            this.staffComboBox.addItem(fullName);
+                            addedStaffNames.add(fullName);
+                        }
+                    }
                 }
+            }
+            
+            Document department = this.departmentDAO.getDepartmentByName(selectedDept);
+            System.out.println("DEBUG: Department document: " + department);
+            
+            if (department != null) {
+                List assignedStaff = (List)department.get((Object)"staffMembers");
+                System.out.println("DEBUG: Staff members list: " + assignedStaff);
+                
+                if (assignedStaff != null && !assignedStaff.isEmpty()) {
+                    for (Object staffUsername : assignedStaff) {
+                        System.out.println("DEBUG: Processing staff username: " + staffUsername);
+                        
+                        // Get user details to convert username to full name
+                        Document userDoc = this.userDAO.getUserByUsername(String.valueOf(staffUsername));
+                        System.out.println("DEBUG: User document: " + userDoc);
+                        
+                        if (userDoc != null) {
+                            String fullName = userDoc.getString((Object)"fullName");
+                            System.out.println("DEBUG: Full name: " + fullName);
+                            
+                            if (fullName != null && !fullName.trim().isEmpty() && !addedStaffNames.contains(fullName)) {
+                                this.staffComboBox.addItem(fullName);
+                                addedStaffNames.add(fullName);
+                                System.out.println("DEBUG: Added to combobox: " + fullName);
+                            }
+                        } else {
+                            System.out.println("DEBUG: User not found for username: " + staffUsername);
+                        }
+                    }
+                } else {
+                    System.out.println("DEBUG: No staff members found for department: " + selectedDept);
+                }
+            } else {
+                System.out.println("DEBUG: Department not found: " + selectedDept);
             }
         }
         catch (Exception e) {
             System.err.println("Error filtering staff by department: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
